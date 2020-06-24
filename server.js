@@ -14,7 +14,7 @@ var settings = {
 	port: 3443
 };
 
-particle.login({username: 'zulyang94@gmail.com', password: 'XXXX'}).then(
+particle.login({username: 'zulyang94@gmail.com', password: 'XXXXX'}).then(
   function(data) {
     token = data.body.access_token;
   },
@@ -34,6 +34,8 @@ var sampleRate = 16000;
 var bitsPerSample = 8;
 var numChannels = 1;
 var outStream = fs.createWriteStream("generated.wav");
+
+var emergency = false;
 
 //Creation of Header for .Wav File
 var writeHeader = function() {
@@ -109,7 +111,7 @@ var WitSpeech = require("node-witai-speech");
 var stream = fs.createReadStream("/Users/zulyang/RescueMe/generated.wav"); //Path to your .wav file here. 
 console.log('READ');
 // The wit.ai instance api key
-var API_KEY = "XXXXX";
+var API_KEY = "XXXXXXXX";
 
 // The content-type for this audio stream (audio/wav, ...)
 var content_type = "audio/wav";
@@ -120,16 +122,25 @@ var parseSpeech =  new Promise((ressolve, reject) => {
 	(err, res) => {
 		if (err) return reject(err);
 		ressolve(res);
+		console.log(res);
+		console.log(res["intents"][0]['name']);
+		//check if intent is call_help
+		if(res["intents"][0]['name'] == 'call_help'){
+			emergency = true;
+		}
+		console.log(emergency);
 	});
-	console.log('READ2');
 });
 
 // check in the promise for the completion of call to witai
 parseSpeech.then((data) => {
-	console.log(data);
+	console.log(parseSpeech);
+
 	//If data.intent is the help, then activate below.
 	//If it is a crisis, then send to Particle API and Twillio API.
-	var fnPr = particle.callFunction({ deviceId: 'XXXX', name: 'runServo', argument: 'Open', auth: token });
+	if(emergency == true){
+
+	var fnPr = particle.callFunction({ deviceId: 'XXXX	', name: 'runServo', argument: 'Open', auth: token });
 	fnPr.then(
 		function(data) {
 			console.log('Called Servo Function Succesfully:', data);
@@ -147,6 +158,7 @@ parseSpeech.then((data) => {
 			})
 		.then(message => console.log(message.sid));
 		console.log('Sent Whatsapp Message to +6592212557')
+	}
 })
 .catch((err) => {
 	console.log(err);
